@@ -25,7 +25,6 @@ provides:
     - name: "speckit.jira.specstoissues"
       file: "commands/specstoissues.md"
       description: "Create Jira hierarchy from spec and tasks"
-      aliases: ["speckit.jira.specstoissues"]
 
     - name: "speckit.jira.discover-fields"
       file: "commands/discover-fields.md"
