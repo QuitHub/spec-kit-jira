@@ -1,7 +1,7 @@
 # Spec Kit - Jira Integration Extension
 
 [![Spec Kit](https://img.shields.io/badge/spec--kit-extension-blue?logo=github)](https://github.com/github/spec-kit)
-[![Version](https://img.shields.io/badge/version-3.0.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
+[![Version](https://img.shields.io/badge/version-3.1.0-green)](https://github.com/mbachorik/spec-kit-jira/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Issues](https://img.shields.io/github/issues/mbachorik/spec-kit-jira)](https://github.com/mbachorik/spec-kit-jira/issues)
 
@@ -9,7 +9,8 @@ Create Jira Epics, Stories, and Issues directly from your spec-kit specification
 
 ## Features
 
-- **3-Level Hierarchy**: Convert SPEC.md → Epic, Phase headers → Stories, Tasks → Task issues
+- **Spec Stories**: Create Jira Epic and Stories directly from spec.md user stories — no tasks.md required
+- **3-Level Hierarchy**: Convert spec.md → Epic, Phase headers → Stories, Tasks → Task issues
 - **2-Level Mode**: Optional simplified mode (Epic → Stories with embedded task checklists)
 - **Custom Field Discovery**: Discover and configure Jira custom fields
 - **Status Synchronization**: Keep local task status in sync with Jira
@@ -66,7 +67,7 @@ project:
   key: "PROJ"
 
 mapping:
-  spec_artifact: "Epic"       # Issue type for SPEC.md
+  spec_artifact: "Epic"       # Issue type for spec.md
   phase_artifact: "Story"     # Issue type for Phase headers
   task_artifact: "Task"       # Issue type for tasks (set to "" for 2-level mode)
 
@@ -92,9 +93,36 @@ defaults:
 
 ## Usage
 
+### Create Jira Stories from Spec (Product Review)
+
+After creating spec.md with `/speckit.specify`, push user stories to Jira so stakeholders can review before planning:
+
+```bash
+claude
+> /speckit.jira.spectostories
+```
+
+This will:
+
+1. Auto-detect spec from git branch name, current directory, or prompt if multiple exist
+2. Create a Jira Epic from `specs/<spec-name>/spec.md`
+3. Create one Story per user story defined in spec.md
+4. Link all Stories to the Epic using the configured relationship
+5. Save mapping to `specs/<spec-name>/jira-mapping.json`
+6. Append a `## Jira` section to spec.md with ticket links
+
+**When to use this vs `specstoissues`:**
+
+| | `spectostories` | `specstoissues` |
+|---|---|---|
+| **Source** | spec.md user stories | tasks.md phase headers |
+| **Requires** | spec.md only | spec.md + tasks.md |
+| **When to run** | After `/speckit.specify` | After `/speckit.tasks` |
+| **Stories represent** | User-facing acceptance stories | Implementation phases |
+
 ### Create Jira Issues from Spec and Tasks
 
-After creating SPEC.md and TASKS.md with spec-kit:
+After creating spec.md and tasks.md with spec-kit:
 
 ```bash
 claude
@@ -145,12 +173,34 @@ claude
 
 This will:
 
-1. Read task completion from TASKS.md
+1. Read task completion from tasks.md
 2. Update Jira issue statuses
 3. Transition issues to "Done" state
 4. Update epic progress
 
 ## Commands
+
+### `/speckit.jira.spectostories`
+
+Create Jira Epic and Stories from spec.md user stories — no tasks.md required.
+
+**Arguments:**
+
+- `--spec <name>` (optional): Specification name to use. Auto-detects if not provided.
+
+**Prerequisites:**
+
+- Specification directory exists: `specs/<spec-name>/`
+- `spec.md` file exists in the specification directory
+- Jira project key configured
+
+**Output:**
+
+- Epic created from spec overview
+- One Story per user story in spec.md
+- All Stories linked to Epic
+- Mapping file: `specs/<spec-name>/jira-mapping.json` (with `"mode": "spec-stories"`)
+- `## Jira` section appended to spec.md
 
 ### `/speckit.jira.specstoissues`
 
@@ -224,11 +274,18 @@ mcp_server: "atlassian"  # or "jira-mcp-server", "jira", etc.
 project:
   key: "PROJ"
 
-# Artifact Mapping
+# Spec Stories Configuration (for /speckit.jira.spectostories)
+# Falls back to mapping.* values if not set
+spectostories:
+  spec_artifact: "Epic"       # Falls back to mapping.spec_artifact
+  story_artifact: "Story"     # Falls back to mapping.phase_artifact
+  spec_story_relationship: "Parent"  # Falls back to mapping.relationships.spec_phase
+
+# Artifact Mapping (for /speckit.jira.specstoissues)
 mapping:
   # Issue types to create
-  spec_artifact: "Epic"       # Issue type for SPEC.md
-  phase_artifact: "Story"     # Issue type for Phase headers in TASKS.md
+  spec_artifact: "Epic"       # Issue type for spec.md
+  phase_artifact: "Story"     # Issue type for Phase headers in tasks.md
   task_artifact: "Task"       # Issue type for task items
                               # Set to "" or "none" for 2-level mode (Spec → Phases only)
 
@@ -262,9 +319,9 @@ field_mappings:
 
 # Status Mapping for sync-status command
 status_mapping:
-  completed: "Done"           # [x] in TASKS.md
-  pending: "To Do"            # [ ] in TASKS.md
-  in_progress: "In Progress"  # [~] in TASKS.md (optional)
+  completed: "Done"           # [x] in tasks.md
+  pending: "To Do"            # [ ] in tasks.md
+  in_progress: "In Progress"  # [~] in tasks.md (optional)
 ```
 
 ### Environment Variable Overrides
@@ -285,6 +342,10 @@ export SPECKIT_JIRA_TASK_ARTIFACT="Task"
 export SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP="Epic Link"
 export SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP="Relates"
 export SPECKIT_JIRA_SPEC_TASK_RELATIONSHIP="Epic Link"
+
+# Spec Stories overrides
+export SPECKIT_JIRA_STORY_ARTIFACT="Story"
+export SPECKIT_JIRA_SPEC_STORY_RELATIONSHIP="Parent"
 ```
 
 ### Local Overrides (Gitignored)
@@ -298,7 +359,7 @@ project:
 
 ## Task Completion Markers
 
-Mark tasks in TASKS.md using checkbox syntax:
+Mark tasks in tasks.md using checkbox syntax:
 
 | Marker  | Status      | Jira Status (default) |
 | ------- | ----------- | --------------------- |
@@ -412,7 +473,43 @@ defaults:
     labels: ["auto-generated"]
 ```
 
-### Example 4: Complete Workflow
+### Example 4: Spec Stories (Early Review Workflow)
+
+```yaml
+# Minimal config for spectostories — just need project key
+project:
+  key: "PROJ"
+
+# Optional: override relationship type for Company-managed projects
+spectostories:
+  spec_story_relationship: "Epic Link"
+```
+
+Then:
+
+```bash
+# 1. Write spec
+> /speckit.specify "Add user authentication"
+
+# 2. Push stories to Jira before planning (no tasks.md needed)
+> /speckit.jira.spectostories
+
+# 3. Stakeholders review stories in Jira
+# 4. Resolve feedback
+> /speckit.clarify
+
+# 5. Technical planning + task breakdown
+> /speckit.plan
+> /speckit.tasks
+
+# 6. Create full implementation hierarchy
+> /speckit.jira.specstoissues
+
+# 7. Implement and sync
+> /speckit.jira.sync-status
+```
+
+### Example 5: Complete Workflow (Tasks-First)
 
 ```bash
 # 1. Create spec and tasks
@@ -429,7 +526,7 @@ defaults:
 > /speckit.jira.specstoissues
 
 # 5. Implement tasks locally
-# (mark tasks complete in TASKS.md)
+# (mark tasks complete in tasks.md)
 
 # 6. Sync status to Jira
 > /speckit.jira.sync-status
@@ -447,10 +544,12 @@ spec-kit-jira/
 ├── extension.yml              # Extension manifest
 ├── jira-config.template.yml   # Config template
 ├── commands/
-│   ├── specstoissues.md
+│   ├── spectostories.md         # Create Epic + Stories from spec.md
+│   ├── specstoissues.md       # Create full hierarchy from spec + tasks
 │   ├── discover-fields.md
 │   └── sync-status.md
 └── docs/
+    ├── usage.md
     └── examples/
 ```
 

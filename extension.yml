@@ -3,7 +3,7 @@ schema_version: "1.0"
 extension:
   id: "jira"
   name: "Jira Integration"
-  version: "3.0.0"
+  version: "3.1.0"
   description: "Create Jira Epics, Stories, and Issues from spec-kit artifacts"
   author: "Michal Bachorik"
   repository: "https://github.com/mbachorik/spec-kit-jira"
@@ -18,6 +18,10 @@ requires:
 
 provides:
   commands:
+    - name: "speckit.jira.spectostories"
+      file: "commands/spectostories.md"
+      description: "Create Jira Epic and Stories from spec.md user stories (no tasks.md required)"
+
     - name: "speckit.jira.specstoissues"
       file: "commands/specstoissues.md"
       description: "Create Jira hierarchy from spec and tasks"
@@ -38,6 +42,11 @@ provides:
       required: true
 
 hooks:
+  after_specify:
+    command: "speckit.jira.spectostories"
+    optional: true
+    prompt: "Create Jira Epic and Stories before planning?"
+    description: "Create Jira Epic and Stories from spec user stories after spec creation"
   after_tasks:
     command: "speckit.jira.specstoissues"
     optional: true
@@ -54,6 +63,10 @@ defaults:
   mcp_server: "atlassian"
   project:
     key: ""
+  spectostories:
+    spec_artifact: "Epic"
+    story_artifact: "Story"
+    spec_story_relationship: "Parent"
   mapping:
     spec_artifact: "Epic"
     phase_artifact: "Story"
