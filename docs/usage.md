@@ -5,11 +5,12 @@ This guide walks through common workflows using the Jira integration extension.
 ## Table of Contents
 
 1. [First Time Setup](#first-time-setup)
-2. [Basic Workflow](#basic-workflow)
-3. [Advanced Configuration](#advanced-configuration)
-4. [Status Synchronization](#status-synchronization)
-5. [Custom Fields](#custom-fields)
-6. [Troubleshooting](#troubleshooting)
+2. [Spec Stories Workflow](#spec-stories-workflow)
+3. [Basic Workflow](#basic-workflow)
+4. [Advanced Configuration](#advanced-configuration)
+5. [Status Synchronization](#status-synchronization)
+6. [Custom Fields](#custom-fields)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -47,6 +48,86 @@ Ensure your MCP server providing Jira tools is configured in your AI agent (Clau
 
 ---
 
+## Spec Stories Workflow
+
+The **spec stories** workflow creates a Jira Epic and one Story per user story from `spec.md` — no `tasks.md` required. Use it to get stories into Jira early so stakeholders can review and prioritize them before technical planning begins.
+
+### When to Use Spec Stories
+
+Use `/speckit.jira.spectostories` when:
+
+- You want stakeholders to review user stories in Jira before `/speckit.plan`
+- You need Jira tickets for planning but haven't broken down implementation tasks yet
+- Your workflow is: **specify → review → plan → implement**
+
+Use `/speckit.jira.specstoissues` when:
+
+- You already have `tasks.md` with implementation phases and tasks
+- You want the full 3-level (or 2-level) issue hierarchy
+
+### Create Stories from Spec
+
+After writing your spec:
+
+```bash
+claude
+> /speckit.specify "Add user authentication"
+
+# Spec created at specs/001-user-auth/spec.md
+# Now push stories to Jira for review:
+
+> /speckit.jira.spectostories
+```
+
+**Output:**
+
+```text
+✅ Epic:    PROJ-100 — User Authentication
+            https://your-instance.atlassian.net/browse/PROJ-100
+
+✅ Stories:
+   PROJ-101 — Secure Login (P1)
+   PROJ-102 — Session Management (P1)
+   PROJ-103 — Password Reset (P2)
+
+📁 Mapping: specs/001-user-auth/jira-mapping.json
+```
+
+The command also appends a `## Jira` section to `spec.md` with links to all created tickets.
+
+### After Stakeholder Review
+
+Once stories have been reviewed in Jira:
+
+```bash
+# Resolve any feedback
+> /speckit.clarify
+
+# Technical planning
+> /speckit.plan
+
+# Generate implementation tasks
+> /speckit.tasks
+
+# Create full Jira hierarchy (implementation sub-tasks under existing stories)
+> /speckit.jira.specstoissues
+```
+
+### Spec Stories Configuration
+
+The `spectostories` section in `jira-config.yml` controls issue types and relationships:
+
+```yaml
+spectostories:
+  spec_artifact: "Epic"       # Issue type for the spec-level Epic
+  story_artifact: "Story"     # Issue type for each user story
+  spec_story_relationship: "Parent"  # How Stories link to their Epic
+```
+
+All settings fall back to `mapping.*` values if not explicitly set, so you typically only need to configure `spectostories` if you want different types than your `specstoissues` workflow.
+
+---
+
 ## Basic Workflow
 
 ### Create Specification and Tasks
@@ -58,12 +139,12 @@ claude
 > /speckit.spec
 
 # Follow the prompts to create your specification
-# Output: SPEC.md
+# Output: spec.md
 
 > /speckit.tasks
 
 # Generate implementation tasks from spec
-# Output: TASKS.md
+# Output: tasks.md
 ```
 
 ### Create Jira Issues
@@ -76,8 +157,8 @@ Convert your spec and tasks into Jira issues:
 
 This creates:
 
-- **1 Epic** from SPEC.md (overall specification)
-- **N Tasks** from TASKS.md (one per task)
+- **1 Epic** from spec.md (overall specification)
+- **N Tasks** from tasks.md (one per task)
 - **Links** connecting all tasks to the epic
 
 **Output files:**
@@ -109,7 +190,7 @@ All tasks linked to epic with 'Relates' relationship
 
 ### Implement Tasks
 
-Work on your tasks locally, and mark them as complete in TASKS.md when done:
+Work on your tasks locally, and mark them as complete in tasks.md when done:
 
 ```markdown
 # Tasks
@@ -131,7 +212,7 @@ Update Jira issue statuses based on local completion:
 
 This will:
 
-- Read task completion from TASKS.md
+- Read task completion from tasks.md
 - Transition completed tasks to "Done" in Jira
 - Update epic progress
 - Log sync activity to `.specify/jira-sync-log.json`
@@ -272,7 +353,7 @@ The sync-status command recognizes several completion markers:
 ### Sync Workflow
 
 1. **Implement tasks locally**
-2. **Mark completed tasks** in TASKS.md
+2. **Mark completed tasks** in tasks.md
 3. **Run sync command**:
 
    ```bash

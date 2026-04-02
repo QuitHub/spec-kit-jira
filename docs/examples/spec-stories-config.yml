@@ -1,0 +1,32 @@
+# Example: Spec Stories (Early Review Workflow)
+#
+# Use this to get Jira stories created immediately after spec writing,
+# before technical planning begins.
+#
+# Workflow:
+#   1. /speckit.specify "feature description"
+#   2. /speckit.jira.spectostories        <-- creates Epic + Stories
+#   3. Stakeholders review in Jira
+#   4. /speckit.clarify                  <-- resolve feedback
+#   5. /speckit.plan → /speckit.tasks
+#   6. /speckit.jira.specstoissues       <-- create implementation sub-tasks
+
+project:
+  key: "PROJ"
+
+# Spec stories config — only set if you need different types
+# than your specstoissues workflow (otherwise falls back to mapping.*)
+spectostories:
+  spec_artifact: "Epic"
+  story_artifact: "Story"
+
+  # "Parent" for Team-managed projects (recommended)
+  # "Epic Link" for Company-managed projects
+  spec_story_relationship: "Parent"
+
+# Default labels applied to spec-generated stories
+defaults:
+  spec:
+    labels: ["spec-driven"]
+  story:
+    labels: ["user-story"]

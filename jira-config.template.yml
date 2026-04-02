@@ -8,7 +8,23 @@ mcp_server: "atlassian"
 project:
   key: ""  # Your Jira project key (e.g., "PROJ", "DEVTEST")
 
-# Artifact Mapping Configuration
+# Spec Stories Configuration (for /speckit.jira.spectostories)
+# Creates Epic + Stories from spec.md user stories — no tasks.md required
+# Falls back to artifact mapping values if not set
+spectostories:
+  # Issue type for the spec-level Epic (falls back to mapping.spec_artifact)
+  spec_artifact: "Epic"
+
+  # Issue type for each user story (falls back to mapping.phase_artifact)
+  story_artifact: "Story"
+
+  # How Stories link to their Epic
+  # "Parent"    — Team-managed projects (breadcrumb hierarchy, recommended)
+  # "Epic Link" — Company-managed projects
+  # Falls back to mapping.relationships.spec_phase
+  spec_story_relationship: "Parent"
+
+# Artifact Mapping Configuration (for /speckit.jira.specstoissues)
 # Defines how spec-kit artifacts map to Jira issue types
 mapping:
   # Spec artifact mapping (highest level - from SPEC.md)
@@ -45,6 +61,10 @@ defaults:
   phase:
     labels: []
     custom_fields: {}
+  # story overrides for /speckit.jira.spectostories (falls back to phase values if not set)
+  story:
+    labels: []
+    custom_fields: {}
   task:
     labels: []
     custom_fields: {}
@@ -67,3 +87,5 @@ status_mapping:
 # - SPECKIT_JIRA_SPEC_PHASE_RELATIONSHIP
 # - SPECKIT_JIRA_PHASE_TASK_RELATIONSHIP
 # - SPECKIT_JIRA_SPEC_TASK_RELATIONSHIP
+# - SPECKIT_JIRA_STORY_ARTIFACT           (spectostories only)
+# - SPECKIT_JIRA_SPEC_STORY_RELATIONSHIP  (spectostories only)

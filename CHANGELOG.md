@@ -5,6 +5,28 @@ All notable changes to the Jira Integration Extension will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2026-03-19
+
+### Added
+
+- **Spec Stories command** (`/speckit.jira.spectostories`): Create Jira Epic and Stories directly from `spec.md` user stories — no `tasks.md` required
+  - Designed for an early-review workflow: run immediately after `/speckit.specify` so stakeholders can review stories in Jira before technical planning begins
+  - Maps `"mode": "spec-stories"` in jira-mapping.json (distinct from `"2-level"` and `"3-level"`)
+  - Appends a `## Jira` section to spec.md with Epic and Story links
+- **`spectostories` configuration section** in jira-config.yml for independent control of:
+  - `spec_artifact` — Epic issue type for the spec (falls back to `mapping.spec_artifact`)
+  - `story_artifact` — Story issue type for each user story (falls back to `mapping.phase_artifact`)
+  - `spec_story_relationship` — how Stories link to their Epic (falls back to `mapping.relationships.spec_phase`)
+- **`after_specify` hook**: optionally prompts to run `/speckit.jira.spectostories` after spec creation
+- **Environment variable overrides** for spectostories configuration:
+  - `SPECKIT_JIRA_STORY_ARTIFACT`
+  - `SPECKIT_JIRA_SPEC_STORY_RELATIONSHIP`
+
+### Unchanged
+
+- All existing commands (`specstoissues`, `discover-fields`, `sync-status`) and configuration are unaffected
+- The `spectostories` config falls back to existing `mapping.*` values when not explicitly set
+
 ## [3.0.0] - 2026-03-06
 
 ### Changed
@@ -187,6 +209,7 @@ To use new config format:
 
 ---
 
+[3.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v3.1.0
 [3.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v3.0.0
 [2.1.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.1.0
 [2.0.0]: https://github.com/mbachorik/spec-kit-jira/releases/tag/v2.0.0
